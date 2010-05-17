@@ -17,10 +17,8 @@ class FileDetection extends PHPUnit_Framework_TestCase
     public function setUp()
     {
 
-        if (!function_exists("finfo_open")) {
-            print "you need fileinfo extension installed to run this test\n";
-            exit(1);
-        }
+        $this->assertTrue(function_exists('finfo_open'), 'You must install the Fileinfo extension to run this test');
+
         global $UTF8_TEXT;
         $this->utf8_text = $UTF8_TEXT;
         

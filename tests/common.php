@@ -1,91 +1,82 @@
 <?php
-require_once '../Rackspace/CloudFiles.php';
+require_once 'cloudfiles_ini.php';
+set_include_path(get_include_path() . PATH_SEPARATOR . realpath(dirname(__FILE__) . '/../'));
+error_reporting(E_ALL | E_STRICT);
+
+require_once 'Rackspace/CloudFiles.php';
 spl_autoload_register(array('Rackspace_CloudFiles', 'autoload'));
 
-require_once 'cloudfiles_ini.php';
-set_include_path(get_include_path() . PATH_SEPARATOR . "../");
 
-error_reporting(E_ALL);
-
-function read_callback_test($bytes)
+function read_callback_test ($bytes)
 {
     if (VERBOSE)
-        print "=> read_callback_test: transferred " . $bytes . " bytes\n";
+        print "=> read_callback_test: transferred {$bytes} bytes\n";
 }
-
-function write_callback_test($bytes)
+function write_callback_test ($bytes)
 {
     if (VERBOSE)
-        print "=> write_callback_test: transferred " . $bytes . " bytes\n";
+        print "=> write_callback_test: transferred {$bytes} bytes\n";
 }
-
 # common test utility functions
 #
-
 # re-implementation of PECL's http_date
 #
-function httpDate($ts=NULL)
+function httpDate ($ts = NULL)
 {
-    if (!$ts) {
+    if (! $ts) {
         return gmdate("D, j M Y h:i:s T");
     } else {
         return gmdate("D, j M Y h:i:s T", $ts);
     }
 }
-
-
 # Specify a word length and any characters to exlude and return
 # a valid UTF-8 string (within the ASCII range)
 #
-function genUTF8($len=10, $excludes=array())
+function genUTF8 ($len = 10, $excludes = array())
 {
     $r = "";
     while (strlen($r) < $len) {
-        $c = rand(32,127); # chr() only works with ASCII (0-127)
-        if (in_array($c, $excludes)) { continue; }
+        $c = rand(32, 127); # chr() only works with ASCII (0-127)
+        if (in_array($c, $excludes)) {
+            continue;
+        }
         $r .= chr($c); # chr() only works with ASCII (0-127)
     }
     return utf8_encode($r);
 }
-
 # generate a big string
 #
-function big_string($length)
+function big_string ($length)
 {
     $r = array();
-    for ($i=0; $i < $length; $i++) {
+    for ($i = 0; $i < $length; $i ++) {
         $r[] = "a";
     }
     return join("", $r);
 }
-
 # To be used with $UTF8_TEXT return the len of $length_string of char
 #  contained in $utf8_array
 #
-function random_utf8_string($length_string, $utf8_array)
+function random_utf8_string ($length_string, $utf8_array)
 {
     $bigtext = "";
     $random_string = "";
-
-    foreach( $utf8_array as $lang => $text )
-    {
+    foreach ($utf8_array as $lang => $text) {
         $bigtext .= $text;
     }
-
-    for ($i = 0; $i < $length_string; $i++)
-    {
-        $random_pick = mt_rand(1, strlen($bigtext));
-        $random_char=NULL;
-        $random_char = trim($bigtext[$random_pick-1]);
+    for ($i = 0; $i < $length_string; $i ++) {
+        $random_pick = mt_rand(1, 
+        strlen($bigtext));
+        $random_char = NULL;
+        $random_char = trim(
+        $bigtext[$random_pick - 1]);
         $random_string .= $random_char;
     }
     return utf8_encode($random_string);
 }
-
 # Some real world UTF8-TEXT
-$UTF8_TEXT = 
-       array("greek" =>
-              "
+$UTF8_TEXT = array(
+"greek" => "
   Σὲ γνωρίζω ἀπὸ τὴν κόψη
   τοῦ σπαθιοῦ τὴν τρομερή,
   σὲ γνωρίζω ἀπὸ τὴν ὄψη
@@ -95,8 +86,8 @@ $UTF8_TEXT =
   τῶν ῾Ελλήνων τὰ ἱερά
   καὶ σὰν πρῶτα ἀνδρειωμένη
   χαῖρε, ὦ χαῖρε, ᾿Ελευθεριά!
-",
-                          "georgian"=> "
+", 
+"georgian" => "
 გთხოვთ ახლავე გაიაროთ რეგისტრაცია Unicode-ის მეათე საერთაშორისო
 კონფერენციაზე დასასწრებად, რომელიც გაიმართება 10-12 მარტს,
 ქ. მაინცში, გერმანიაში. კონფერენცია შეჰკრებს ერთად მსოფლიოს
@@ -104,9 +95,8 @@ $UTF8_TEXT =
 ინტერნაციონალიზაცია და ლოკალიზაცია, Unicode-ის გამოყენება
 ოპერაციულ სისტემებსა, და გამოყენებით პროგრამებში, შრიფტებში,
 ტექსტების დამუშავებასა და მრავალენოვან კომპიუტერულ სისტემებში.
-",
-                          
-                          "thai" => "
+", 
+"thai" => "
  ๏ แผ่นดินฮั่นเสื่อมโทรมแสนสังเวช  พระปกเกศกองบู๊กู้ขึ้นใหม่
   สิบสองกษัตริย์ก่อนหน้าแลถัดไป       สององค์ไซร้โง่เขลาเบาปัญญา
     ทรงนับถือขันทีเป็นที่พึ่ง           บ้านเมืองจึงวิปริตเป็นนักหนา
@@ -115,8 +105,8 @@ $UTF8_TEXT =
   ฝ่ายอ้องอุ้นยุแยกให้แตกกัน          ใช้สาวนั้นเป็นชนวนชื่นชวนใจ
     พลันลิฉุยกุยกีกลับก่อเหตุ          ช่างอาเพศจริงหนาฟ้าร้องไห้
   ต้องรบราฆ่าฟันจนบรรลัย           ฤๅหาใครค้ำชูกู้บรรลังก์ ฯ
-",
-                          "ethiopian" => "
+", 
+"ethiopian" => "
   ሰማይ አይታረስ ንጉሥ አይከሰስ።
   ብላ ካለኝ እንደአባቴ በቆመጠኝ።
   ጌጥ ያለቤቱ ቁምጥና ነው።
@@ -135,10 +125,9 @@ $UTF8_TEXT =
   ተንጋሎ ቢተፉ ተመልሶ ባፉ።
   ወዳጅህ ማር ቢሆን ጨርስህ አትላሰው።
   እግርህን በፍራሽህ ልክ ዘርጋ።
-",
-             "yidish" => "איך קען עסן גלאָז און עס טוט מיר נישט װײ",
-             "braille" => "⠊⠀⠉⠁⠝⠀⠑⠁⠞⠀⠛⠇⠁⠎⠎⠀⠁⠝⠙⠀⠊⠞⠀⠙⠕⠑⠎⠝⠞⠀⠓⠥⠗⠞⠀⠍⠑",
-             "chinese" => "
+", "yidish" => "איך קען עסן גלאָז און עס טוט מיר נישט װײ", 
+"braille" => "⠊⠀⠉⠁⠝⠀⠑⠁⠞⠀⠛⠇⠁⠎⠎⠀⠁⠝⠙⠀⠊⠞⠀⠙⠕⠑⠎⠝⠞⠀⠓⠥⠗⠞⠀⠍⠑", 
+"chinese" => "
 大云寺赞公房四首 (一)
 心在水精域
 衣沾春雨时
@@ -156,35 +145,32 @@ $UTF8_TEXT =
 花边行自迟
 汤休起我病
 微笑索题诗
-",
-             "japanese" => "
+", "japanese" => "
 射ハ兵器ノ長なり。
 三才ニ法レリ。
 孔子曰ク射ハ君子似有乎。
 正鵠失諸　反テ其身ニ諸求。
-",
-           );
-
-function debug($texto){
-    file_put_contents('/tmp/quick-cf-api.log',date('d/m/Y H:i:s').' - '.$texto."\n",FILE_APPEND);
+");
+function debug ($texto)
+{
+    file_put_contents('/tmp/quick-cf-api.log', 
+    date('d/m/Y H:i:s') . ' - ' . $texto . "\n", FILE_APPEND);
 }
-
 /**
-   * Get the temporary directory abstracted of the OS
-   *
-   */
-function get_tmpdir() {
+ * Get the temporary directory abstracted of the OS
+ *
+ */
+function get_tmpdir ()
+{
     if (isset($_ENV['TMP']))
         return realpath($_ENV['TMP']);
     if (isset($_ENV['TMPDIR']))
-        return realpath( $_ENV['TMPDIR']);
+        return realpath($_ENV['TMPDIR']);
     if (isset($_ENV['TEMP']))
-        return realpath( $_ENV['TEMP']);
-
-    $tempfile=tempnam(uniqid(rand(),TRUE),'');
-    if (file_exists($tempfile)) 
+        return realpath($_ENV['TEMP']);
+    $tempfile = tempnam(uniqid(rand(), TRUE), '');
+    if (file_exists($tempfile))
         unlink($tempfile);
     return realpath(dirname($tempfile));
 }
-
 ?>

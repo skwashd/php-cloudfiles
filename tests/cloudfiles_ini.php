@@ -1,23 +1,20 @@
 <?php
-$VERBOSE = False;                       # informational messages to stdout
-$USER    = "";                          # Rackspace Cloud Username
-$API_KEY = "";				# Rackspace Cloud API Key
-$ACCOUNT = NULL;                        # DEPRECATED: account name
-$HOST    = NULL;                        # DEPRECATED: authentication host URL
-
+$VERBOSE = False; # informational messages to stdout
+$USER = ""; # Rackspace Cloud Username
+$API_KEY = ""; # Rackspace Cloud API Key
+$ACCOUNT = NULL; # DEPRECATED: account name
+$HOST = NULL; # DEPRECATED: authentication host URL
 # Allow override by environment variable
-if (isset($_ENV["RCLOUD_API_USER"])) {
-    $USER = $_ENV["RCLOUD_API_USER"];
+if ( getenv("RCLOUD_API_USER") !== False ) {
+    $USER = getenv("RCLOUD_API_USER");
+}
+if ( getenv("RCLOUD_API_KEY") !== False ) {
+    $API_KEY = getenv("RCLOUD_API_KEY");
 }
 
-if (isset($_ENV["RCLOUD_API_KEY"])) {
-    $API_KEY = $_ENV["RCLOUD_API_KEY"];
+if ( getenv("RCLOUD_API_VERBOSE") !== False ) {
+    $VERBOSE = getenv("RCLOUD_API_VERBOSE");
 }
-
-if (isset($_ENV["RCLOUD_API_VERBOSE"])) {
-    $VERBOSE = $_ENV["RCLOUD_API_VERBOSE"];
-}
-
 # Make it global
 define('USER', $USER);
 define('API_KEY', $API_KEY);
@@ -34,4 +31,3 @@ define('VERBOSE', $VERBOSE);
  * c-hanging-comment-ender-p: nil
  * End:
  */
-?>

@@ -4,7 +4,7 @@
  *
  * PHP Version 5
  *
- *  Copyright (C) 2008 Rackspace US, Inc.
+ * Copyright (C) 2008 Rackspace US, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -79,14 +79,12 @@ class Rackspace_CloudFiles_Authentication
     public $api_key;
     public $auth_host;
     public $account;
-
     /**
      * Instance variables that are set after successful authentication
      */
     public $storage_url;
     public $cdnm_url;
     public $auth_token;
-
     /**
      * Class constructor (PHP 5 syntax)
      *
@@ -95,22 +93,18 @@ class Rackspace_CloudFiles_Authentication
      * @param string $account <b>Deprecated</b> <i>Account name</i>
      * @param string $auth_host <b>Deprecated</b> <i>Authentication service URI</i>
      */
-    public function __construct($username=NULL, $api_key=NULL, $account=NULL, $auth_host=NULL)
+    public function __construct ($username = NULL, $api_key = NULL, $account = NULL, $auth_host = NULL)
     {
-
         $this->dbug = False;
         $this->username = $username;
         $this->api_key = $api_key;
         $this->account_name = $account;
         $this->auth_host = $auth_host;
-
         $this->storage_url = NULL;
         $this->cdnm_url = NULL;
         $this->auth_token = NULL;
-
         $this->cfs_http = new Rackspace_CloudFiles_Http(Rackspace_CloudFiles::DEFAULT_API_VERSION);
     }
-
     /**
      * Use the Certificate Authority bundle included with this API
      *
@@ -132,11 +126,10 @@ class Rackspace_CloudFiles_Authentication
      *
      * @param string $path Specify path to CA bundle (default to included)
      */
-    public function ssl_use_cabundle($path=NULL)
+    public function ssl_use_cabundle ($path = NULL)
     {
         $this->cfs_http->ssl_use_cabundle($path);
     }
-
     /**
      * Attempt to validate Username/API Access Key
      *
@@ -160,88 +153,83 @@ class Rackspace_CloudFiles_Authentication
      * @throws AuthenticationException invalid credentials
      * @throws InvalidResponseException invalid response
      */
-    public function authenticate($version=Rackspace_CloudFiles::DEFAULT_API_VERSION)
+    public function authenticate ($version = Rackspace_CloudFiles::DEFAULT_API_VERSION)
     {
-        list($status,$reason,$surl,$curl,$atoken) = 
-                $this->cfs_http->authenticate($this->username, $this->api_key,
-                $this->account_name, $this->auth_host);
+        list ($status, $reason, $surl, $curl, $atoken) = 
+            $this->cfs_http->authenticate($this->username, $this->api_key, $this->account_name, $this->auth_host);
 
         if ($status == 401) {
             throw new Rackspace_CloudFiles_AuthenticationException("Invalid username or access key.");
         }
-        if ($status != 204) {
-            throw new Rackspace_CloudFiles_InvalidResponseException(
-                "Unexpected response (".$status."): ".$reason);
-        }
 
-        if (!($surl || $curl) || !$atoken) {
-            throw new Rackspace_CloudFiles_InvalidResponseException(
-                "Expected headers missing from auth service.");
+        if ($status != 204) {
+            throw new Rackspace_CloudFiles_InvalidResponseException("Unexpected response ({$status}): {$reason}");
         }
+        
+        if (! ($surl || $curl) || ! $atoken) {
+            throw new Rackspace_CloudFiles_InvalidResponseException("Expected headers missing from auth service.");
+        }
+        
         $this->storage_url = $surl;
         $this->cdnm_url = $curl;
         $this->auth_token = $atoken;
         return True;
     }
-        /**
-         * Use Cached Token and Storage URL's rather then grabbing from the Auth System
-         *
-         * Example:
-          * <code>
-         * #Create an Auth instance
-         * $auth = new CF_Authentication();
-         * #Pass Cached URL's and Token as Args
-         * $auth->load_cached_credentials("auth_token", "storage_url", "cdn_management_url");
-         * </code>
-         * 
-         * @param string $auth_token A Cloud Files Auth Token (Required)
-         * @param string $storage_url The Cloud Files Storage URL (Required)
-         * @param string $cdnm_url CDN Management URL (Required)
-         * @return boolean <kbd>True</kbd> if successful 
-         * @throws Rackspace_CloudFiles_SyntaxException If any of the Required Arguments are missing
-         */
-        public function load_cached_credentials($auth_token, $storage_url, $cdnm_url)
+    /**
+     * Use Cached Token and Storage URL's rather then grabbing from the Auth System
+     *
+     * Example:
+     * <code>
+     * #Create an Auth instance
+     * $auth = new CF_Authentication();
+     * #Pass Cached URL's and Token as Args
+     * $auth->load_cached_credentials("auth_token", "storage_url", "cdn_management_url");
+     * </code>
+     * 
+     * @param string $auth_token A Cloud Files Auth Token (Required)
+     * @param string $storage_url The Cloud Files Storage URL (Required)
+     * @param string $cdnm_url CDN Management URL (Required)
+     * @return boolean <kbd>True</kbd> if successful 
+     * @throws Rackspace_CloudFiles_SyntaxException If any of the Required Arguments are missing
+     */
+    public function load_cached_credentials ($auth_token, $storage_url, $cdnm_url)
     {
-        if(!$storage_url || !$cdnm_url)
-        {
-                throw new Rackspace_CloudFiles_SyntaxException("Missing Required Interface URL's!");
-                return False;
+        if (! $storage_url || ! $cdnm_url) {
+            throw new Rackspace_CloudFiles_SyntaxException(
+            "Missing Required Interface URL's!");
+            return False;
         }
-        if(!$auth_token)
-        {
-                throw new Rackspace_CloudFiles_SyntaxException("Missing Auth Token!");
-                return False;
+        if (! $auth_token) {
+            throw new Rackspace_CloudFiles_SyntaxException(
+            "Missing Auth Token!");
+            return False;
         }
-
         $this->storage_url = $storage_url;
-        $this->cdnm_url    = $cdnm_url;
-        $this->auth_token  = $auth_token;
+        $this->cdnm_url = $cdnm_url;
+        $this->auth_token = $auth_token;
         return True;
     }
-        /**
-         * Grab Cloud Files info to be Cached for later use with the load_cached_credentials method.
-         *
-         * Example:
-         * <code>
-         * #Create an Auth instance
-         * $auth = new CF_Authentication("UserName","API_Key");
-         * $auth->authenticate();
-         * $array = $auth->export_credentials();
-         * </code>
-         * 
-         * @return array of url's and an auth token.
-         */
-    public function export_credentials()
+    /**
+     * Grab Cloud Files info to be Cached for later use with the load_cached_credentials method.
+     *
+     * Example:
+     * <code>
+     * #Create an Auth instance
+     * $auth = new CF_Authentication("UserName","API_Key");
+     * $auth->authenticate();
+     * $array = $auth->export_credentials();
+     * </code>
+     * 
+     * @return array of url's and an auth token.
+     */
+    public function export_credentials ()
     {
         $arr = array();
         $arr['storage_url'] = $this->storage_url;
-        $arr['cdnm_url']    = $this->cdnm_url;
-        $arr['auth_token']  = $this->auth_token;
-
+        $arr['cdnm_url'] = $this->cdnm_url;
+        $arr['auth_token'] = $this->auth_token;
         return $arr;
     }
-
-
     /**
      * Make sure the CF_Authentication instance has authenticated.
      *
@@ -250,18 +238,18 @@ class Rackspace_CloudFiles_Authentication
      *
      * @return boolean <kbd>True</kbd> if successfully authenticated
      */
-    public function authenticated()
+    public function authenticated ()
     {
-        if (!($this->storage_url || $this->cdnm_url) || !$this->auth_token) {
+        if (! ($this->storage_url || $this->cdnm_url) ||
+         ! $this->auth_token) {
             return False;
         }
         return True;
     }
-
     /**
      * Toggle debugging - set cURL verbose flag
      */
-    public function setDebug($bool)
+    public function setDebug ($bool)
     {
         $this->dbug = $bool;
         $this->cfs_http->setDebug($bool);
