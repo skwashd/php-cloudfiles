@@ -1,5 +1,10 @@
 <?php
+
+/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
+
 /**
+ * CloudFiles HTTP Client
+ * 
  * This is an HTTP client class for Cloud Files.  It uses PHP's cURL module
  * to handle the actual HTTP request/response.  This is NOT a generic HTTP
  * client class and is only used to abstract out the HTTP communication for
@@ -16,93 +21,226 @@
  * get_object_to_stream() and put_object() take an open filehandle
  * argument for streaming data out of or into Cloud Files.
  *
- * Requres PHP 5.x (for Exceptions and OO syntax)
+ * PHP Version 5
  *
- * See COPYING for license information.
+ *  Copyright (C) 2008 Rackspace US, Inc.
  *
- * @author Eric "EJ" Johnson <ej@racklabs.com>
- * @copyright Copyright (c) 2008, Rackspace US, Inc.
- * @package php-cloudfiles-http
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * Except as contained in this notice, the name of Rackspace US, Inc. shall not
+ * be used in advertising or otherwise to promote the sale, use or other dealings
+ * in this Software without prior written authorization from Rackspace US, Inc. 
+ *
+ * @category   Rackspace
+ * @package    Rackspace_CloudFiles
+ * @author     Eric "EJ" Johnson <ej@racklabs.com>
+ * @author     Dave Hall <me@davehall.com.au>
+ * @copyright  Copyright (c) 2008, Rackspace US, Inc.
+ * @copyright  Copyright (c) 2010, Dave Hall Consulting http://davehall.com.au
+ * @license    http://opensource.org/licenses/mit-license.php
+ * @link       http://www.rackspacecloud.com/cloud_hosting_products/servers/api
  */
 
 /**
+ * Current version of the package
  */
-require_once("cloudfiles_exceptions.php");
-
 define("PHP_CF_VERSION", "1.7.0");
+
+/**
+ * User agent to supply
+ */
 define("USER_AGENT", sprintf("PHP-CloudFiles/%s", PHP_CF_VERSION));
+
+/**
+ * Account container count HTTP header
+ */
 define("ACCOUNT_CONTAINER_COUNT", "X-Account-Container-Count");
+
+/**
+ * Bytes used HTTP header
+ */
 define("ACCOUNT_BYTES_USED", "X-Account-Bytes-Used");
+
+/**
+ * Container object count HTTP header
+ */
 define("CONTAINER_OBJ_COUNT", "X-Container-Object-Count");
+
+/**
+ * Container bytes used HTTP header
+ */
 define("CONTAINER_BYTES_USED", "X-Container-Bytes-Used");
+
+/**
+ * Metadata HTTP header
+ */
 define("METADATA_HEADER", "X-Object-Meta-");
+
+/**
+ * CDN URI HTTP header
+ */
 define("CDN_URI", "X-CDN-URI");
+
+/**
+ * CDN enabled HTTP header
+ */
 define("CDN_ENABLED", "X-CDN-Enabled");
+
+/**
+ * CDN log retention enabled HTTP header
+ */
 define("CDN_LOG_RETENTION", "X-Log-Retention");
+
+/**
+ * CDN ACL user agent HTTP header
+ */
 define("CDN_ACL_USER_AGENT", "X-User-Agent-ACL");
+
+/**
+ * CDN ACL referrer HTTP header
+ */
 define("CDN_ACL_REFERRER", "X-Referrer-ACL");
+
+/**
+ * CDN TTL HTTP header
+ */
 define("CDN_TTL", "X-TTL");
+
+/**
+ * CDN Management URI HTTP header
+ */
 define("CDNM_URL", "X-CDN-Management-Url");
+
+/**
+ * CloudFiles storage URI HTTP header
+ */
 define("STORAGE_URL", "X-Storage-Url");
+
+/**
+ * Authentication session token HTTP header
+ */
 define("AUTH_TOKEN", "X-Auth-Token");
+
+/**
+ * Authentication user HTTP header
+ */
 define("AUTH_USER_HEADER", "X-Auth-User");
+
+/**
+ * Authentication account key HTTP header
+ */
 define("AUTH_KEY_HEADER", "X-Auth-Key");
+
+/**
+ * Account username HTTP header (legacy)
+ * @deprecated
+ */
 define("AUTH_USER_HEADER_LEGACY", "X-Storage-User");
+
+/**
+ * Account password HTTP header (legacy)
+ * @deprecated
+ */
 define("AUTH_KEY_HEADER_LEGACY", "X-Storage-Pass");
+
+/**
+ * Authentication session token HTTP header (legacy)
+ * @deprecated
+ */
 define("AUTH_TOKEN_LEGACY", "X-Storage-Token");
 
 /**
- * HTTP/cURL wrapper for Cloud Files
+ * CloudFiles HTTP Client
+ * 
+ * This is an HTTP client class for Cloud Files.  It uses PHP's cURL module
+ * to handle the actual HTTP request/response.  This is NOT a generic HTTP
+ * client class and is only used to abstract out the HTTP communication for
+ * the PHP Cloud Files API.
  *
  * This class should not be used directly.  It's only purpose is to abstract
  * out the HTTP communication from the main API.
  *
- * @package php-cloudfiles-http
+ * This module was designed to re-use existing HTTP(S) connections between
+ * subsequent operations.  For example, performing multiple PUT operations
+ * will re-use the same connection.
+ *
+ * This modules also provides support for streaming content into and out
+ * of Cloud Files.  The majority (all?) of the PHP HTTP client modules expect
+ * to read the server's response into a string variable.  This will not work
+ * with large files without killing your server.  Methods like,
+ * get_object_to_stream() and put_object() take an open filehandle
+ * argument for streaming data out of or into Cloud Files.
+ *
+ * @category   Rackspace
+ * @package    Rackspace_CloudFiles
+ * @author     Eric "EJ" Johnson <ej@racklabs.com>
+ * @author     Dave Hall <me@davehall.com.au>
+ * @copyright  Copyright (c) 2008, Rackspace US, Inc.
+ * @copyright  Copyright (c) 2010, Dave Hall Consulting http://davehall.com.au
+ * @license    http://opensource.org/licenses/mit-license.php
+ * @link       http://www.rackspacecloud.com/cloud_hosting_products/servers/api
  */
-class CF_Http
+class Rackspace_CloudFiles_Http
 {
-    private $error_str;
-    private $dbug;
-    private $cabundle_path;
-    private $api_version;
+    protected $error_str;
+    protected $dbug;
+    protected $cabundle_path;
+    protected $api_version;
 
     # Authentication instance variables
     #
-    private $storage_url;
-    private $cdnm_url;
-    private $auth_token;
+    protected $storage_url;
+    protected $cdnm_url;
+    protected $auth_token;
 
     # Request/response variables
     #
-    private $response_status;
-    private $response_reason;
-    private $connections;
+    protected $response_status;
+    protected $response_reason;
+    protected $connections;
 
     # Variables used for content/header callbacks
     #
-    private $_user_read_progress_callback_func;
-    private $_user_write_progress_callback_func;
-    private $_write_callback_type;
-    private $_text_list;
-    private $_account_container_count;
-    private $_account_bytes_used;
-    private $_container_object_count;
-    private $_container_bytes_used;
-    private $_obj_etag;
-    private $_obj_last_modified;
-    private $_obj_content_type;
-    private $_obj_content_length;
-    private $_obj_metadata;
-    private $_obj_write_resource;
-    private $_obj_write_string;
-    private $_cdn_enabled;
-    private $_cdn_uri;
-    private $_cdn_ttl;
-    private $_cdn_log_retention;
-    private $_cdn_acl_user_agent;
-    private $_cdn_acl_referrer;
+    protected $_user_read_progress_callback_func;
+    protected $_user_write_progress_callback_func;
+    protected $_write_callback_type;
+    protected $_text_list;
+    protected $_account_container_count;
+    protected $_account_bytes_used;
+    protected $_container_object_count;
+    protected $_container_bytes_used;
+    protected $_obj_etag;
+    protected $_obj_last_modified;
+    protected $_obj_content_type;
+    protected $_obj_content_length;
+    protected $_obj_metadata;
+    protected $_obj_write_resource;
+    protected $_obj_write_string;
+    protected $_cdn_enabled;
+    protected $_cdn_uri;
+    protected $_cdn_ttl;
+    protected $_cdn_log_retention;
+    protected $_cdn_acl_user_agent;
+    protected $_cdn_acl_referrer;
 
-    function __construct($api_version)
+    public function __construct($api_version)
     {
         $this->dbug = False;
         $this->cabundle_path = NULL;
@@ -133,7 +271,7 @@ class CF_Http
         $this->_user_write_progress_callback_func = NULL;
         $this->_write_callback_type = NULL;
         $this->_text_list = array();
-	$this->_return_list = NULL;
+        $this->_return_list = NULL;
         $this->_account_container_count = 0;
         $this->_account_bytes_used = 0;
         $this->_container_object_count = 0;
@@ -164,7 +302,7 @@ class CF_Http
         
     }
 
-    function ssl_use_cabundle($path=NULL)
+    public function ssl_use_cabundle($path=NULL)
     {
         if ($path) {
             $this->cabundle_path = $path;
@@ -172,7 +310,7 @@ class CF_Http
             $this->cabundle_path = dirname(__FILE__) . "/share/cacert.pem";
         }
         if (!file_exists($this->cabundle_path)) {
-            throw new IOException("Could not use CA bundle: "
+            throw new Rackspace_CloudFiles_IOException("Could not use CA bundle: "
                 . $this->cabundle_path);
         }
         return;
@@ -180,7 +318,7 @@ class CF_Http
 
     # Uses separate cURL connection to authenticate
     #
-    function authenticate($user, $pass, $acct=NULL, $host=NULL)
+    public function authenticate($user, $pass, $acct=NULL, $host=NULL)
     {
         $path = array();
         if (isset($acct) || isset($host)) {
@@ -196,9 +334,9 @@ class CF_Http
                 sprintf("%s: %s", AUTH_USER_HEADER, $user),
                 sprintf("%s: %s", AUTH_KEY_HEADER, $pass),
                 );
-	    $path[] = "https://auth.api.rackspacecloud.com";
+            $path[] = "https://auth.api.rackspacecloud.com";
         }
-	$path[] = "v1.0";
+        $path[] = "v1.0";
         $url = implode("/", $path);
 
         $curl_ch = curl_init();
@@ -224,13 +362,13 @@ class CF_Http
 
     # (CDN) GET /v1/Account
     #
-    function list_cdn_containers()
+    public function list_cdn_containers()
     {
         $conn_type = "GET_CALL";
-        $url_path = $this->_make_path("CDN", $container_name);
+        $url_path = $this->make_path("CDN", $container_name);
 
         $this->_write_callback_type = "TEXT_LIST";
-        $return_code = $this->_send_request($conn_type, $url_path);
+        $return_code = $this->send_request($conn_type, $url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -247,7 +385,7 @@ class CF_Http
                 array());
         }
         if ($return_code == 200) {
-	    $this->create_array();
+            $this->create_array();
             return array($return_code,$this->response_reason,$this->_text_list);
         }
         $this->error_str = "Unexpected HTTP response: ".$this->response_reason;
@@ -256,16 +394,16 @@ class CF_Http
 
     # (CDN) POST /v1/Account/Container
     #
-    function update_cdn_container($container_name, $ttl=86400, $cdn_log_retention=False,
+    public function update_cdn_container($container_name, $ttl=86400, $cdn_log_retention=False,
                                   $cdn_acl_user_agent="", $cdn_acl_referrer)
     {
         if ($container_name == "")
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
 
         if ($container_name != "0" and !isset($container_name))
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
 
-        $url_path = $this->_make_path("CDN", $container_name);
+        $url_path = $this->make_path("CDN", $container_name);
         $hdrs = array(
             CDN_ENABLED => "True",
             CDN_TTL => $ttl,
@@ -273,7 +411,7 @@ class CF_Http
             CDN_ACL_USER_AGENT => $cdn_acl_user_agent,
             CDN_ACL_REFERRER => $cdn_acl_referrer,
             );
-        $return_code = $this->_send_request("DEL_POST",$url_path,$hdrs,"POST");
+        $return_code = $this->send_request("DEL_POST",$url_path,$hdrs,"POST");
         if ($return_code == 401) {
             $this->error_str = "Unauthorized";
             return array($return_code, $this->error_str, NULL);
@@ -292,20 +430,20 @@ class CF_Http
 
     # (CDN) PUT /v1/Account/Container
     #
-    function add_cdn_container($container_name, $ttl=86400)
+    public function add_cdn_container($container_name, $ttl=86400)
     {
         if ($container_name == "")
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
 
         if ($container_name != "0" and !isset($container_name))
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
         
-        $url_path = $this->_make_path("CDN", $container_name);
+        $url_path = $this->make_path("CDN", $container_name);
         $hdrs = array(
             CDN_ENABLED => "True",
             CDN_TTL => $ttl,
             );
-        $return_code = $this->_send_request("PUT_CONT", $url_path, $hdrs);
+        $return_code = $this->send_request("PUT_CONT", $url_path, $hdrs);
         if ($return_code == 401) {
             $this->error_str = "Unauthorized";
             return array($return_code,$this->response_reason,False);
@@ -319,17 +457,17 @@ class CF_Http
 
     # (CDN) POST /v1/Account/Container
     #
-    function remove_cdn_container($container_name)
+    public function remove_cdn_container($container_name)
     {
         if ($container_name == "")
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
 
         if ($container_name != "0" and !isset($container_name))
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
         
-        $url_path = $this->_make_path("CDN", $container_name);
+        $url_path = $this->make_path("CDN", $container_name);
         $hdrs = array(CDN_ENABLED => "False");
-        $return_code = $this->_send_request("DEL_POST",$url_path,$hdrs,"POST");
+        $return_code = $this->send_request("DEL_POST",$url_path,$hdrs,"POST");
         if ($return_code == 401) {
             $this->error_str = "Unauthorized";
             return array($return_code, $this->error_str);
@@ -347,17 +485,17 @@ class CF_Http
 
     # (CDN) HEAD /v1/Account
     #
-    function head_cdn_container($container_name)
+    public function head_cdn_container($container_name)
     {
         if ($container_name == "")
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
 
         if ($container_name != "0" and !isset($container_name))
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
         
         $conn_type = "HEAD";
-        $url_path = $this->_make_path("CDN", $container_name);
-        $return_code = $this->_send_request($conn_type, $url_path);
+        $url_path = $this->make_path("CDN", $container_name);
+        $return_code = $this->send_request($conn_type, $url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -387,10 +525,10 @@ class CF_Http
 
     # GET /v1/Account
     #
-    function list_containers($limit=0, $marker=NULL)
+    public function list_containers($limit=0, $marker=NULL)
     {
         $conn_type = "GET_CALL";
-        $url_path = $this->_make_path();
+        $url_path = $this->make_path();
 
         $limit = intval($limit);
         $params = array();
@@ -405,7 +543,7 @@ class CF_Http
         }
 
         $this->_write_callback_type = "TEXT_LIST";
-        $return_code = $this->_send_request($conn_type, $url_path);
+        $return_code = $this->send_request($conn_type, $url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -419,7 +557,7 @@ class CF_Http
             return array($return_code,$this->error_str,array());
         }
         if ($return_code == 200) {
-	    $this->create_array();
+            $this->create_array();
             return array($return_code, $this->response_reason, $this->_text_list);
         }
         $this->error_str = "Unexpected HTTP response: ".$this->response_reason;
@@ -428,10 +566,10 @@ class CF_Http
 
     # GET /v1/Account?format=json
     #
-    function list_containers_info($limit=0, $marker=NULL)
+    public function list_containers_info($limit=0, $marker=NULL)
     {
         $conn_type = "GET_CALL";
-        $url_path = $this->_make_path() . "?format=json";
+        $url_path = $this->make_path() . "?format=json";
 
         $limit = intval($limit);
         $params = array();
@@ -446,7 +584,7 @@ class CF_Http
         }
 
         $this->_write_callback_type = "OBJECT_STRING";
-        $return_code = $this->_send_request($conn_type, $url_path);
+        $return_code = $this->send_request($conn_type, $url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -469,12 +607,12 @@ class CF_Http
 
     # HEAD /v1/Account
     #
-    function head_account()
+    public function head_account()
     {
         $conn_type = "HEAD";
 
-        $url_path = $this->_make_path();
-        $return_code = $this->_send_request($conn_type,$url_path);
+        $url_path = $this->make_path();
+        $return_code = $this->send_request($conn_type,$url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -492,16 +630,16 @@ class CF_Http
 
     # PUT /v1/Account/Container
     #
-    function create_container($container_name)
+    public function create_container($container_name)
     {
         if ($container_name == "")
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
 
         if ($container_name != "0" and !isset($container_name))
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
 
-        $url_path = $this->_make_path("STORAGE", $container_name);
-        $return_code = $this->_send_request("PUT_CONT",$url_path);
+        $url_path = $this->make_path("STORAGE", $container_name);
+        $return_code = $this->send_request("PUT_CONT",$url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -512,16 +650,16 @@ class CF_Http
 
     # DELETE /v1/Account/Container
     #
-    function delete_container($container_name)
+    public function delete_container($container_name)
     {
         if ($container_name == "")
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
 
         if ($container_name != "0" and !isset($container_name))
-            throw new SyntaxException("Container name not set.");
+            throw new Rackspace_CloudFiles_SyntaxException("Container name not set.");
 
-        $url_path = $this->_make_path("STORAGE", $container_name);
-        $return_code = $this->_send_request("DEL_POST",$url_path,array(),"DELETE");
+        $url_path = $this->make_path("STORAGE", $container_name);
+        $return_code = $this->send_request("DEL_POST",$url_path,array(),"DELETE");
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -540,14 +678,14 @@ class CF_Http
 
     # GET /v1/Account/Container
     #
-    function list_objects($cname,$limit=0,$marker=NULL,$prefix=NULL,$path=NULL)
+    public function list_objects($cname,$limit=0,$marker=NULL,$prefix=NULL,$path=NULL)
     {
         if (!$cname) {
             $this->error_str = "Container name not set.";
             return array(0, $this->error_str, array());
         }
 
-        $url_path = $this->_make_path("STORAGE", $cname);
+        $url_path = $this->make_path("STORAGE", $cname);
 
         $limit = intval($limit);
         $params = array();
@@ -569,7 +707,7 @@ class CF_Http
  
         $conn_type = "GET_CALL";
         $this->_write_callback_type = "TEXT_LIST";
-        $return_code = $this->_send_request($conn_type,$url_path);
+        $return_code = $this->send_request($conn_type,$url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -584,7 +722,7 @@ class CF_Http
             return array($return_code,$this->error_str,array());
         }
         if ($return_code == 200) {
-	    $this->create_array();	
+            $this->create_array();        
             return array($return_code,$this->response_reason, $this->_text_list);
         }
         $this->error_str = "Unexpected HTTP response code: $return_code";
@@ -593,14 +731,14 @@ class CF_Http
 
     # GET /v1/Account/Container?format=json
     #
-    function get_objects($cname,$limit=0,$marker=NULL,$prefix=NULL,$path=NULL)
+    public function get_objects($cname,$limit=0,$marker=NULL,$prefix=NULL,$path=NULL)
     {
         if (!$cname) {
             $this->error_str = "Container name not set.";
             return array(0, $this->error_str, array());
         }
 
-        $url_path = $this->_make_path("STORAGE", $cname);
+        $url_path = $this->make_path("STORAGE", $cname);
 
         $limit = intval($limit);
         $params = array();
@@ -623,7 +761,7 @@ class CF_Http
  
         $conn_type = "GET_CALL";
         $this->_write_callback_type = "OBJECT_STRING";
-        $return_code = $this->_send_request($conn_type,$url_path);
+        $return_code = $this->send_request($conn_type,$url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -648,7 +786,7 @@ class CF_Http
 
     # HEAD /v1/Account/Container
     #
-    function head_container($container_name)
+    public function head_container($container_name)
     {
 
         if ($container_name == "") {
@@ -663,8 +801,8 @@ class CF_Http
     
         $conn_type = "HEAD";
 
-        $url_path = $this->_make_path("STORAGE", $container_name);
-        $return_code = $this->_send_request($conn_type,$url_path);
+        $url_path = $this->make_path("STORAGE", $container_name);
+        $return_code = $this->send_request($conn_type,$url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -682,18 +820,18 @@ class CF_Http
 
     # GET /v1/Account/Container/Object
     #
-    function get_object_to_string(&$obj, $hdrs=array())
+    public function get_object_to_string(&$obj, $hdrs=array())
     {
         if (!is_object($obj) || get_class($obj) != "CF_Object") {
-            throw new SyntaxException(
+            throw new Rackspace_CloudFiles_SyntaxException(
                 "Method argument is not a valid CF_Object.");
         }
 
         $conn_type = "GET_CALL";
 
-        $url_path = $this->_make_path("STORAGE", $obj->container->name,$obj->name);
+        $url_path = $this->make_path("STORAGE", $obj->container->name,$obj->name);
         $this->_write_callback_type = "OBJECT_STRING";
-        $return_code = $this->_send_request($conn_type,$url_path,$hdrs);
+        $return_code = $this->send_request($conn_type,$url_path,$hdrs);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -713,23 +851,23 @@ class CF_Http
 
     # GET /v1/Account/Container/Object
     #
-    function get_object_to_stream(&$obj, &$resource=NULL, $hdrs=array())
+    public function get_object_to_stream(&$obj, &$resource=NULL, $hdrs=array())
     {
         if (!is_object($obj) || get_class($obj) != "CF_Object") {
-            throw new SyntaxException(
+            throw new Rackspace_CloudFiles_SyntaxException(
                 "Method argument is not a valid CF_Object.");
         }
         if (!is_resource($resource)) {
-            throw new SyntaxException(
+            throw new Rackspace_CloudFiles_SyntaxException(
                 "Resource argument not a valid PHP resource.");
         }
 
         $conn_type = "GET_CALL";
 
-        $url_path = $this->_make_path("STORAGE", $obj->container->name,$obj->name);
+        $url_path = $this->make_path("STORAGE", $obj->container->name,$obj->name);
         $this->_obj_write_resource = $resource;
         $this->_write_callback_type = "OBJECT_STREAM";
-        $return_code = $this->_send_request($conn_type,$url_path,$hdrs);
+        $return_code = $this->send_request($conn_type,$url_path,$hdrs);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -749,21 +887,21 @@ class CF_Http
 
     # PUT /v1/Account/Container/Object
     #
-    function put_object(&$obj, &$fp)
+    public function put_object(&$obj, &$fp)
     {
         if (!is_object($obj) || get_class($obj) != "CF_Object") {
-            throw new SyntaxException(
+            throw new Rackspace_CloudFiles_SyntaxException(
                 "Method argument is not a valid CF_Object.");
         }
         if (!is_resource($fp)) {
-            throw new SyntaxException(
+            throw new Rackspace_CloudFiles_SyntaxException(
                 "File pointer argument is not a valid resource.");
         }
 
         $conn_type = "PUT_OBJ";
-        $url_path = $this->_make_path("STORAGE", $obj->container->name,$obj->name);
+        $url_path = $this->make_path("STORAGE", $obj->container->name,$obj->name);
 
-        $hdrs = $this->_metadata_headers($obj);
+        $hdrs = $this->metadata_headers($obj);
 
         $etag = $obj->getETag();
         if (isset($etag)) {
@@ -775,7 +913,7 @@ class CF_Http
             $hdrs[] = "Content-Type: " . $obj->content_type;
         }
 
-        $this->_init($conn_type);
+        $this->init($conn_type);
         curl_setopt($this->connections[$conn_type],
                 CURLOPT_INFILE, $fp);
         if (!$obj->content_length) {
@@ -789,7 +927,7 @@ class CF_Http
             curl_setopt($this->connections[$conn_type],
                     CURLOPT_INFILESIZE, $obj->content_length);
         }
-        $return_code = $this->_send_request($conn_type,$url_path,$hdrs);
+        $return_code = $this->send_request($conn_type,$url_path,$hdrs);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -812,10 +950,10 @@ class CF_Http
 
     # POST /v1/Account/Container/Object
     #
-    function update_object(&$obj)
+    public function update_object(&$obj)
     {
         if (!is_object($obj) || get_class($obj) != "CF_Object") {
-            throw new SyntaxException(
+            throw new Rackspace_CloudFiles_SyntaxException(
                 "Method argument is not a valid CF_Object.");
         }
 
@@ -824,10 +962,10 @@ class CF_Http
             return 0;
         }
 
-        $url_path = $this->_make_path("STORAGE", $obj->container->name,$obj->name);
+        $url_path = $this->make_path("STORAGE", $obj->container->name,$obj->name);
 
-        $hdrs = $this->_metadata_headers($obj);
-        $return_code = $this->_send_request("DEL_POST",$url_path,$hdrs,"POST");
+        $hdrs = $this->metadata_headers($obj);
+        $return_code = $this->send_request("DEL_POST",$url_path,$hdrs,"POST");
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
             return 0;
@@ -843,17 +981,17 @@ class CF_Http
 
     # HEAD /v1/Account/Container/Object
     #
-    function head_object(&$obj)
+    public function head_object(&$obj)
     {
         if (!is_object($obj) || get_class($obj) != "CF_Object") {
-            throw new SyntaxException(
+            throw new Rackspace_CloudFiles_SyntaxException(
                 "Method argument is not a valid CF_Object.");
         }
 
         $conn_type = "HEAD";
 
-        $url_path = $this->_make_path("STORAGE", $obj->container->name,$obj->name);
-        $return_code = $this->_send_request($conn_type,$url_path);
+        $url_path = $this->make_path("STORAGE", $obj->container->name,$obj->name);
+        $return_code = $this->send_request($conn_type,$url_path);
 
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
@@ -880,7 +1018,7 @@ class CF_Http
 
     # DELETE /v1/Account/Container/Object
     #
-    function delete_object($container_name, $object_name)
+    public function delete_object($container_name, $object_name)
     {
         if ($container_name == "") {
             $this->error_str = "Container name not set.";
@@ -897,8 +1035,8 @@ class CF_Http
             return 0;
         }
 
-        $url_path = $this->_make_path("STORAGE", $container_name,$object_name);
-        $return_code = $this->_send_request("DEL_POST",$url_path,NULL,"DELETE");
+        $url_path = $this->make_path("STORAGE", $container_name,$object_name);
+        $return_code = $this->send_request("DEL_POST",$url_path,NULL,"DELETE");
         if (!$return_code) {
             $this->error_str .= ": Failed to obtain valid HTTP response.";
             return 0;
@@ -912,12 +1050,12 @@ class CF_Http
         return $return_code;
     }
 
-    function get_error()
+    public function get_error()
     {
         return $this->error_str;
     }
 
-    function setDebug($bool)
+    public function setDebug($bool)
     {
         $this->dbug = $bool;
         foreach ($this->connections as $k => $v) {
@@ -927,22 +1065,22 @@ class CF_Http
         }
     }
 
-    function getCDNMUrl()
+    public function getCDNMUrl()
     {
         return $this->cdnm_url;
     }
 
-    function getStorageUrl()
+    public function getStorageUrl()
     {
         return $this->storage_url;
     }
 
-    function getAuthToken()
+    public function getAuthToken()
     {
         return $this->auth_token;
     }
 
-    function setCFAuth($cfs_auth, $servicenet=False)
+    public function setCFAuth($cfs_auth, $servicenet=False)
     {
         if ($servicenet) {
             $this->storage_url = "https://snet-" . substr($cfs_auth->storage_url, 8);
@@ -953,17 +1091,17 @@ class CF_Http
         $this->cdnm_url = $cfs_auth->cdnm_url;
     }
 
-    function setReadProgressFunc($func_name)
+    public function setReadProgressFunc($func_name)
     {
         $this->_user_read_progress_callback_func = $func_name;
     }
 
-    function setWriteProgressFunc($func_name)
+    public function setWriteProgressFunc($func_name)
     {
         $this->_user_write_progress_callback_func = $func_name;
     }
 
-    private function _header_cb($ch, $header)
+    protected function header_cb($ch, $header)
     {
         preg_match("/^HTTP\/1\.[01] (\d{3}) (.*)/", $header, $matches);
         if (isset($matches[1])) {
@@ -1065,7 +1203,7 @@ class CF_Http
         return strlen($header);
     }
 
-    private function _read_cb($ch, $fd, $length)
+    protected function read_cb($ch, $fd, $length)
     {
         $data = fread($fd, $length);
         $len = strlen($data);
@@ -1075,14 +1213,14 @@ class CF_Http
         return $data;
     }
 
-    private function _write_cb($ch, $data)
+    protected function write_cb($ch, $data)
     {
         $dlen = strlen($data);
         switch ($this->_write_callback_type) {
         case "TEXT_LIST":
-	     $this->_return_list = $this->_return_list . $data;
-	     //= explode("\n",$data); # keep tab,space
-	     //his->_text_list[] = rtrim($data,"\n\r\x0B"); # keep tab,space
+             $this->_return_list = $this->_return_list . $data;
+             //= explode("\n",$data); # keep tab,space
+             //his->_text_list[] = rtrim($data,"\n\r\x0B"); # keep tab,space
             break;
         case "OBJECT_STREAM":
             fwrite($this->_obj_write_resource, $data, $dlen);
@@ -1097,7 +1235,7 @@ class CF_Http
         return $dlen;
     }
 
-    private function _auth_hdr_cb($ch, $header)
+    protected function auth_hdr_cb($ch, $header)
     {
         preg_match("/^HTTP\/1\.[01] (\d{3}) (.*)/", $header, $matches);
         if (isset($matches[1])) {
@@ -1121,7 +1259,7 @@ class CF_Http
         return strlen($header);
     }
 
-    private function _make_headers($hdrs=NULL)
+    protected function make_headers($hdrs=NULL)
     {
         $new_headers = array();
         $has_stoken = False;
@@ -1155,7 +1293,7 @@ class CF_Http
         return $new_headers;
     }
 
-    private function _init($conn_type, $force_new=False)
+    protected function init($conn_type, $force_new=False)
     {
         if (!array_key_exists($conn_type, $this->connections)) {
             $this->error_str = "Invalid CURL_XXX connection type";
@@ -1174,7 +1312,7 @@ class CF_Http
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, True);
             curl_setopt($ch, CURLOPT_CAINFO, $this->cabundle_path);
         }
-	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, True);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, True);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_MAXREDIRS, 4);
         curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -1187,7 +1325,7 @@ class CF_Http
         if ($conn_type == "PUT_OBJ") {
             curl_setopt($ch, CURLOPT_PUT, 1);
             curl_setopt($ch, CURLOPT_READFUNCTION, array(&$this, '_read_cb'));
-	    //curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            //curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         }
         if ($conn_type == "HEAD") {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "HEAD");
@@ -1196,19 +1334,19 @@ class CF_Http
         if ($conn_type == "PUT_CONT") {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
             curl_setopt($ch, CURLOPT_INFILESIZE, 0);
-	    curl_setopt($ch, CURLOPT_NOBODY, 1);
+            curl_setopt($ch, CURLOPT_NOBODY, 1);
         }
         if ($conn_type == "DEL_POST") {
-        	curl_setopt($ch, CURLOPT_NOBODY, 1);
-	}
+                curl_setopt($ch, CURLOPT_NOBODY, 1);
+        }
         $this->connections[$conn_type] = $ch;
         return;
     }
 
-    private function _reset_callback_vars()
+    protected function reset_callback_vars()
     {
         $this->_text_list = array();
-	$this->_return_list = NULL;
+        $this->_return_list = NULL;
         $this->_account_container_count = 0;
         $this->_account_bytes_used = 0;
         $this->_container_object_count = 0;
@@ -1226,7 +1364,7 @@ class CF_Http
         $this->response_reason = "";
     }
 
-    private function _make_path($t="STORAGE",$c=NULL,$o=NULL)
+    protected function make_path($t="STORAGE",$c=NULL,$o=NULL)
     {
         $path = array();
         switch ($t) {
@@ -1249,12 +1387,12 @@ class CF_Http
         return implode("/",$path);
     }
 
-    private function _metadata_headers(&$obj)
+    protected function metadata_headers(&$obj)
     {
         $hdrs = array();
         foreach ($obj->metadata as $k => $v) {
             if (strpos($k,":") !== False) {
-                throw new SyntaxException(
+                throw new Rackspace_CloudFiles_SyntaxException(
                     "Metadata keys cannot contain a ':' character.");
             }
             $k = trim($k);
@@ -1271,14 +1409,14 @@ class CF_Http
         return $hdrs;
     }
 
-    private function _send_request($conn_type, $url_path, $hdrs=NULL, $method="GET")
+    protected function send_request($conn_type, $url_path, $hdrs=NULL, $method="GET")
     {
-        $this->_init($conn_type);
-        $this->_reset_callback_vars();
-        $headers = $this->_make_headers($hdrs);
+        $this->init($conn_type);
+        $this->reset_callback_vars();
+        $headers = $this->make_headers($hdrs);
 
         if (gettype($this->connections[$conn_type]) == "unknown type")
-            throw new ConnectionNotOpenException (
+            throw new Rackspace_CloudFiles_ConnectionNotOpenException (
                 "Connection is not open."
                 );
         
@@ -1309,7 +1447,7 @@ class CF_Http
         return curl_getinfo($this->connections[$conn_type], CURLINFO_HTTP_CODE);
     }
     
-    function close()
+    public function close()
     {
         foreach ($this->connections as $cnx) {
             if (isset($cnx)) {
@@ -1318,15 +1456,13 @@ class CF_Http
             }
         }
     }
-    private function create_array()
+    protected function create_array()
     {
-	$this->_text_list = explode("\n",rtrim($this->_return_list,"\n\x0B"));
-	return True;
+        $this->_text_list = explode("\n",rtrim($this->_return_list,"\n\x0B"));
+        return True;
     }
 
 }
-
-/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
 /*
  * Local variables:
@@ -1335,4 +1471,3 @@ class CF_Http
  * c-hanging-comment-ender-p: nil
  * End:
  */
-?>

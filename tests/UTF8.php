@@ -21,10 +21,10 @@ class UTF8 extends PHPUnit_Framework_TestCase
         $this->utf8_text = $UTF8_TEXT;
         
         #Connect!
-        $this->auth = new CF_Authentication(USER, API_KEY);
+        $this->auth = new Rackspace_CloudFiles_Authentication(USER, API_KEY);
         $this->auth->authenticate();
         
-        $this->conn = new CF_Connection($this->auth);
+        $this->conn = new Rackspace_CloudFiles_Connection($this->auth);
         
         #Make sure it's deleted at the end
         $this->container = $this->conn->create_container("utf-8");

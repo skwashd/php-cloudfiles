@@ -1,7 +1,9 @@
 <?php
+require_once '../Rackspace/CloudFiles.php';
+spl_autoload_register(array('Rackspace_CloudFiles', 'autoload'));
+
 require_once 'cloudfiles_ini.php';
 set_include_path(get_include_path() . PATH_SEPARATOR . "../");
-require_once 'cloudfiles.php';
 
 error_reporting(E_ALL);
 

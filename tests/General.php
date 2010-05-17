@@ -18,9 +18,9 @@ class CloudFileAccountInfoTest extends PHPUnit_Framework_TestCase
     
     protected function setUp()
     {
-        $this->auth = new CF_Authentication(USER, API_KEY);
+        $this->auth = new Rackspace_CloudFiles_Authentication(USER, API_KEY);
         $this->auth->authenticate();
-        $this->conn = new CF_Connection($this->auth);
+        $this->conn = new Rackspace_CloudFiles_Connection($this->auth);
         #We will need it all of those
         $this->conn->set_read_progress_function("read_callback_test");
         $this->conn->set_write_progress_function("write_callback_test");

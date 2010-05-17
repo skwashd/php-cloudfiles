@@ -60,12 +60,12 @@
 ;; the PHP API documentation.
 ;;
 [Parse Data]
-title = php-cloudfiles
+title = Rackspace CloudFiles
 hidden = false
 parseprivate = off
 javadocdesc = off
-defaultpackagename = php-cloudfiles
-defaultcategoryname = php-cloudfiles
+defaultpackagename = Rackspace_CloudFiles
+defaultcategoryname = Rackspace
 target = docs
 directory = .
 ignore = share/,examples/,tests/,.git/,.gitignore,*.ini,*.swp
